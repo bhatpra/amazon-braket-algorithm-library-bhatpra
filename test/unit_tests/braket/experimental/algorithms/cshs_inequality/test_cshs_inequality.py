@@ -12,17 +12,14 @@
 # language governing permissions and limitations under the License.
 
 
-import math
-
-import numpy as np
 from braket.circuits import Circuit
 from braket.devices import LocalSimulator
 
-from braket.experimental.algorithms.cshs_inequality import (
+from braket.experimental.algorithms.chsh_inequality import (
     bell_singlet,
     bell_singlet_rotated_basis,
-    get_cshs_results,
-    submit_cshs_tasks,
+    get_chsh_results,
+    submit_chsh_tasks,
 )
 
 
@@ -39,7 +36,7 @@ def test_bell_singlet_rotated_basis():
 
 
 def test_bell_inequality():
-    tasks = submit_cshs_tasks(LocalSimulator())
+    tasks = submit_chsh_tasks(LocalSimulator())
     assert len(tasks) == 4
-    cshs_value, cshs_inequality_lhs, results, E_ab, E_ab_, E_a_b, E_a_b_ = get_cshs_results(tasks)
+    chsh_value, chsh_inequality_lhs, results, E_ab, E_ab_, E_a_b, E_a_b_ = get_chsh_results(tasks)
     assert len(results) == 4

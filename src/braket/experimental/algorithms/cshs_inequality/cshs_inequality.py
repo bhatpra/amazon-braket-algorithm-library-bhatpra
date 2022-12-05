@@ -2,12 +2,12 @@ from collections import Counter
 from typing import List, Tuple
 
 import numpy as np
-from braket.circuits import Circuit, Observable, Qubit
+from braket.circuits import Circuit, Qubit
 from braket.devices import Device
 from braket.tasks import QuantumTask
 
 
-def submit_cshs_tasks(
+def submit_chsh_tasks(
     device: Device,
     shots: int = 1_000,
     qubit0: Qubit = 0,
@@ -18,7 +18,7 @@ def submit_cshs_tasks(
     b_: float = 3 * np.pi / 8,
     verbose: bool = False,
 ) -> List[QuantumTask]:
-    """Submit four CSHS circuits to a device.
+    """Submit four chsh circuits to a device.
 
     Args:
         device (Device): Quantum device or simulator.
@@ -54,7 +54,7 @@ def submit_cshs_tasks(
     return tasks
 
 
-def get_cshs_results(
+def get_chsh_results(
     tasks: List[QuantumTask], verbose: bool = True
 ) -> Tuple[List[Counter[float]], float, float, float]:
     """Return Bell task results after post-processing.
@@ -79,23 +79,23 @@ def get_cshs_results(
     # print("prob_different:", prob_different)
     # Bell probabilities
     E_ab, E_ab_, E_a_b, E_a_b_ = np.array(prob_same) - np.array(prob_different)
-    cshs_value = E_ab - E_ab_ + E_a_b + E_a_b_
+    chsh_value = E_ab - E_ab_ + E_a_b + E_a_b_
     if verbose:
-        print("cshs_value:", cshs_value)
-    cshs_ineqality_lhs = np.abs(cshs_value)
+        print("chsh_value:", chsh_value)
+    chsh_ineqality_lhs = np.abs(chsh_value)
     if verbose:
         print(
-            f"E(a,b) = {E_ab},E(a,b') = {E_ab_}, E(a',b) = {E_a_b}, E(a',b') = {E_a_b_}\nCSHS inequality: {cshs_ineqality_lhs} ≤ 2"
+            f"E(a,b) = {E_ab},E(a,b') = {E_ab_}, E(a',b) = {E_a_b}, E(a',b') = {E_a_b_}\nchsh inequality: {chsh_ineqality_lhs} ≤ 2"
         )
-        if cshs_ineqality_lhs > 1:
-            print("CSHS inequality is violated!")
+        if chsh_ineqality_lhs > 1:
+            print("chsh inequality is violated!")
             print(
                 "Notice that the quantity may not be exactly as predicted by Quantum theory."
                 "This is may be due to less number shots or the effects of noise on the QPU."
             )
         else:
-            print("CSHS inequality is not violated.")
-    return cshs_value, cshs_ineqality_lhs, results, E_ab, E_ab_, E_a_b, E_a_b_
+            print("chsh inequality is not violated.")
+    return chsh_value, chsh_ineqality_lhs, results, E_ab, E_ab_, E_a_b, E_a_b_
 
 
 def bell_singlet_rotated_basis(
