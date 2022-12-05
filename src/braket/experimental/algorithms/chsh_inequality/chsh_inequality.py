@@ -2,55 +2,57 @@ from collections import Counter
 from typing import List, Tuple
 
 import numpy as np
-from braket.circuits import Circuit, Qubit
+from braket.circuits import Circuit, Observable, Qubit, circuit
 from braket.devices import Device
 from braket.tasks import QuantumTask
 
 
-def submit_chsh_tasks(
-    device: Device,
-    shots: int = 1_000,
+def create_chsh_inequality_circuits(
     qubit0: Qubit = 0,
     qubit1: Qubit = 1,
     a: float = 0,
     a_: float = 2 * np.pi / 8,
     b: float = np.pi / 8,
     b_: float = 3 * np.pi / 8,
-    verbose: bool = False,
-) -> List[QuantumTask]:
-    """Submit four chsh circuits to a device.
+) -> List[Circuit]:
+    """Create the four circuits for CHSH inequality. Default angles will give maximum violation
+    of the inequality.
 
     Args:
-        device (Device): Quantum device or simulator.
-        shots (int): Number of shots. Defaults to 1_000.
         qubit0 (Qubit): First qubit.
         qubit1 (Qubit): Second qubit.
         a (Float): First basis rotation angle for first qubit
         a_ (Float): Second basis rotation angle for first qubit
         a (Float): First basis rotation angle for second qubit
         a_ (Float): Second basis rotation angle for second qubit
-        verbose (bool): Controls printing of the circuit and other info. Defaults to True.
 
     Returns:
         List[QuantumTask]: List of quantum tasks.
     """
-    if verbose:
-        print("a:", a)
-        print("a_:", a_)
-        print("b:", b)
-        print("b_:", b_)
-
     circ_ab = bell_singlet_rotated_basis(qubit0, qubit1, a, b)
     circ_ab_ = bell_singlet_rotated_basis(qubit0, qubit1, a, b_).h(qubit1)
     circ_a_b = bell_singlet_rotated_basis(qubit0, qubit1, a_, b).h(qubit0)
     circ_a_b_ = bell_singlet_rotated_basis(qubit0, qubit1, a_, b_).h(qubit0).h(qubit1)
-    if verbose:
-        print("circ_ab\n:", circ_ab)
-        print("circ_ab_\n:", circ_ab_)
-        print("circ_a_b\n:", circ_a_b)
-        print("circ_a_b_\n:", circ_a_b_)
+    return [circ_ab, circ_ab_, circ_a_b, circ_a_b_]
 
-    tasks = [device.run(circ, shots=shots) for circ in [circ_ab, circ_ab_, circ_a_b, circ_a_b_]]
+
+def run_chsh_inequality(
+    circuits: List[Circuit],
+    device: Device,
+    shots: int = 1_000,
+) -> List[QuantumTask]:
+
+    """Submit four CHSH circuits to a device.
+
+    Args:
+        circuits (List[Circuit]): Four CHSH inequality circuits to run.
+        device (Device): Quantum device or simulator.
+        shots (int): Number of shots. Defaults to 1_000.
+
+    Returns:
+        List[QuantumTask]: List of quantum tasks.
+    """
+    tasks = [device.run(circ, shots=shots) for circ in circuits]
     return tasks
 
 
@@ -66,36 +68,25 @@ def get_chsh_results(
     Returns:
         Tuple[List[Counter[float]], float, float, float]: results, pAB, pAC, pBC
     """
-    results = [task.result().measurement_probabilities for task in tasks]
-    # prob_same = [d["00"] + d["11"] for d in results]
-    # if verbose:
-    # print("measurement_probabilities:", results)
-    prob_same = [(d["00"] if "00" in d else 0) + (d["11"] if "11" in d else 0) for d in results]
-    prob_different = [
-        (d["01"] if "01" in d else 0) + (d["10"] if "10" in d else 0) for d in results
-    ]
-    # if verbose:
-    # print("prob_same:", prob_same)
-    # print("prob_different:", prob_different)
-    # Bell probabilities
+    results = [task.result().result_types[0].value for task in tasks]
+    prob_same = np.array([d[0] + d[3] for d in results])  # 00 and 11 states
+    prob_different = np.array([d[1] + d[2] for d in results])  # 01 and 10 states
     E_ab, E_ab_, E_a_b, E_a_b_ = np.array(prob_same) - np.array(prob_different)
     chsh_value = E_ab - E_ab_ + E_a_b + E_a_b_
+
     if verbose:
-        print("chsh_value:", chsh_value)
-    chsh_ineqality_lhs = np.abs(chsh_value)
-    if verbose:
-        print(
-            f"E(a,b) = {E_ab},E(a,b') = {E_ab_}, E(a',b) = {E_a_b}, E(a',b') = {E_a_b_}\nchsh inequality: {chsh_ineqality_lhs} ≤ 2"
-        )
-        if chsh_ineqality_lhs > 1:
-            print("chsh inequality is violated!")
+        print(f"E(a,b) = {E_ab},E(a,b') = {E_ab_}, E(a',b) = {E_a_b}, E(a',b') = {E_a_b_}")
+        print(f"\nCHSH inequality: {chsh_value} ≤ 2")
+
+        if chsh_value > 2:
+            print("CHSH inequality is violated!")
             print(
-                "Notice that the quantity may not be exactly as predicted by Quantum theory."
-                "This is may be due to less number shots or the effects of noise on the QPU."
+                "Notice that the quantity may not be exactly as predicted by Quantum theory. "
+                "This is may be due to finite shots or the effects of noise on the QPU."
             )
         else:
-            print("chsh inequality is not violated.")
-    return chsh_value, chsh_ineqality_lhs, results, E_ab, E_ab_, E_a_b, E_a_b_
+            print("CHSH inequality is not violated.")
+    return chsh_value, results, E_ab, E_ab_, E_a_b, E_a_b_
 
 
 def bell_singlet_rotated_basis(
@@ -112,17 +103,14 @@ def bell_singlet_rotated_basis(
     Returns:
         Circuit: the Braket circuit that prepares the Bell circuit.
     """
-    circ = bell_singlet(qubit0, qubit1)
+    circ = Circuit().bell_singlet(qubit0, qubit1)
     if rotation0 != 0:
-        # circ.rx(qubit0, rotation0)
         circ.ry(qubit0, rotation0)
-    if rotation1 != 0:
-        # circ.rx(qubit1, rotation1)
-        circ.ry(qubit1, rotation1)
-    # circ.sample(Observable.Z())
+    circ.probability()
     return circ
 
 
+@circuit.subroutine(register=True)
 def bell_singlet(qubit0: Qubit, qubit1: Qubit) -> Circuit:
     """Prepare a Bell singlet state.
 
@@ -133,5 +121,4 @@ def bell_singlet(qubit0: Qubit, qubit1: Qubit) -> Circuit:
     Returns:
         Circuit: the Braket circuit that prepares the Bell single state.
     """
-    # return Circuit().x(qubit0).x(qubit1).h(qubit0).cnot(qubit0, qubit1)
     return Circuit().h(qubit0).cnot(qubit0, qubit1)

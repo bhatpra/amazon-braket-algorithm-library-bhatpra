@@ -11,32 +11,28 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
-
-from braket.circuits import Circuit
 from braket.devices import LocalSimulator
 
 from braket.experimental.algorithms.chsh_inequality import (
-    bell_singlet,
-    bell_singlet_rotated_basis,
+    create_chsh_inequality_circuits,
     get_chsh_results,
-    submit_chsh_tasks,
+    run_chsh_inequality,
 )
 
 
-def test_bell_singlet():
-    circ = bell_singlet(0, 1)
-    expected = Circuit().h(0).cnot(0, 1)
-    assert circ == expected
+def create_chsh_inequality_circuits():
+    circuits = create_chsh_inequality_circuits()
+    assert len(circuits) == 4
 
 
-def test_bell_singlet_rotated_basis():
-    circ = bell_singlet_rotated_basis(0, 1, 0.5, 0.25)
-    expected = Circuit().h(0).cnot(0, 1).ry(0, 0.5).ry(1, 0.25)
-    assert circ == expected
+def test_run_chsh_inequality():
+    circuits = create_chsh_inequality_circuits()
+    local_tasks = run_chsh_inequality(circuits, LocalSimulator(), shots=0)
+    assert len(local_tasks) == 4
 
 
-def test_bell_inequality():
-    tasks = submit_chsh_tasks(LocalSimulator())
-    assert len(tasks) == 4
-    chsh_value, chsh_inequality_lhs, results, E_ab, E_ab_, E_a_b, E_a_b_ = get_chsh_results(tasks)
+def test_get_chsh_results():
+    circuits = create_chsh_inequality_circuits()
+    local_tasks = run_chsh_inequality(circuits, LocalSimulator(), shots=0)
+    chsh_value, results, E_ab, E_ab_, E_a_b, E_a_b_ = get_chsh_results(local_tasks)
     assert len(results) == 4
