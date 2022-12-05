@@ -2,7 +2,7 @@ from collections import Counter
 from typing import List, Tuple
 
 import numpy as np
-from braket.circuits import Circuit, Observable, Qubit, circuit
+from braket.circuits import Circuit, Qubit, circuit
 from braket.devices import Device
 from braket.tasks import QuantumTask
 
@@ -15,8 +15,8 @@ def create_chsh_inequality_circuits(
     b: float = np.pi / 8,
     b_: float = 3 * np.pi / 8,
 ) -> List[Circuit]:
-    """Create the four circuits for CHSH inequality. Default angles will give maximum violation
-    of the inequality.
+    """Create the four circuits for CHSH inequality. Default angles will give maximum violation of
+    the inequality.
 
     Args:
         qubit0 (Qubit): First qubit.
