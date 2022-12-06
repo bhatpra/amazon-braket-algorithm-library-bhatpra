@@ -11,6 +11,8 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 
+
+import numpy as np
 from braket.devices import LocalSimulator
 
 from braket.experimental.algorithms.chsh_inequality import (
@@ -20,19 +22,25 @@ from braket.experimental.algorithms.chsh_inequality import (
 )
 
 
-def create_chsh_inequality_circuits():
-    circuits = create_chsh_inequality_circuits()
-    assert len(circuits) == 4
-
-
-def test_run_chsh_inequality():
-    circuits = create_chsh_inequality_circuits()
+def test_chsh_reduces_to_bell():
+    circuits = create_chsh_inequality_circuits(0, 1, 0, np.pi / 3, 2 * np.pi / 3, np.pi / 3)
     local_tasks = run_chsh_inequality(circuits, LocalSimulator(), shots=0)
-    assert len(local_tasks) == 4
+    chsh_value, results, pAB, pAC, pDB, pDC = get_chsh_results(local_tasks)
+    assert np.isclose(pAB, -0.5)
+    assert np.isclose(pAC, 0.5)
+    assert np.isclose(pDB, -1)
+    assert np.isclose(pDC, -0.5)
+    assert np.isclose(chsh_value, 2.5)
+    assert len(results) == 4
 
 
-def test_get_chsh_results():
-    circuits = create_chsh_inequality_circuits()
+def test_max_chsh_violation():
+    circuits = create_chsh_inequality_circuits(0, 1, 0, np.pi / 4, 3 * np.pi / 4, np.pi / 2)
     local_tasks = run_chsh_inequality(circuits, LocalSimulator(), shots=0)
-    chsh_value, results, E_ab, E_ab_, E_a_b, E_a_b_ = get_chsh_results(local_tasks)
+    chsh_value, results, pAB, pAC, pDB, pDC = get_chsh_results(local_tasks)
+    assert np.isclose(pAB, -np.sqrt(2) / 2)
+    assert np.isclose(pAC, np.sqrt(2) / 2)
+    assert np.isclose(pDB, -np.sqrt(2) / 2)
+    assert np.isclose(pDC, -np.sqrt(2) / 2)
+    assert np.isclose(chsh_value, 2 * np.sqrt(2))
     assert len(results) == 4

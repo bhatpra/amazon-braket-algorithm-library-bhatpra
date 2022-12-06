@@ -12,8 +12,6 @@
 # language governing permissions and limitations under the License.
 
 from braket.experimental.algorithms.chsh_inequality.chsh_inequality import (  # noqa: F401
-    bell_singlet,
-    bell_singlet_rotated_basis,
     create_chsh_inequality_circuits,
     get_chsh_results,
     run_chsh_inequality,
