@@ -79,7 +79,7 @@ def get_chsh_results(
     chsh_value = np.abs(pAB - pAC) + np.abs(pDB + pDC)
 
     if verbose:
-        print(f"E(a,b) = {pAB}, E(a,c) = {pAC}, E(d,b) = {pDB}, E(d,c) = {pDC}")
+        print(f"P(a,b) = {pAB}, P(a,c) = {pAC}, P(d,b) = {pDB}, P(d,c) = {pDC}")
         print(f"\nCHSH inequality: {chsh_value} ≤ 2")
 
         if chsh_value > 2:
